@@ -37,6 +37,15 @@ barplot(
 test = seq(0.7, 13.9, length.out = ncol(dat_num))
 axis(1, at = test, labels = 1:ncol(dat_num)) # bend after 5th component
 
-pca_data$x[, 1:5] |>
+pca_data = pca_data$x[, 1:5] |>
   as_tibble() |>
+  mutate(
+    dest_airport_seq_ID = data$DEST_AIRPORT_SEQ_ID,
+    dest_city_name = data$DEST_CITY_NAME,
+    most_common_origin_apt = data$most_common_origin_apt,
+    most_common_origin_city = data$most_common_origin_city,
+    most_common_origin_state = data$most_common_origin_state,
+    .before = PC1
+  )
+pca_data |>
   write_csv(file = "receiving_airports_pc.csv")
