@@ -3,7 +3,7 @@ library(rlang)
 library(stringi)
 library(conflicted)
 "dplyr" |>
-	conflict_prefer_all(quiet = TRUE)
+  conflict_prefer_all(quiet = TRUE)
 
 data = "Flights1_2019_1.csv" |>
   read_csv() |>
@@ -37,6 +37,11 @@ receiving_airports = data |>
     n_flights_received = n(),
     mean_delay_mins = mean(ARR_DELAY, na.rm = TRUE),
     sd_delay_mins = sd(ARR_DELAY, na.rm = TRUE),
+    mean_arr_delay = mean((ARR_DELAY-DEP_DELAY),na.rm = TRUE),
+    sd_arr_delay = sd((ARR_DELAY-DEP_DELAY),na.rm = TRUE),
+    percent_flight_del10 = (sum(ARR_DELAY > 10, na.rm = TRUE)/n())*100,
+    percent_flight_early10 = (sum(ARR_DELAY < -10, na.rm = TRUE)/n())*100,
+    most_common_origin = names(table(ORIGIN_CITY_NAME))[which.max(table(ORIGIN_CITY_NAME))],
     .by = c(
       DEST_AIRPORT_SEQ_ID,
       DEST_CITY_NAME,
@@ -44,17 +49,3 @@ receiving_airports = data |>
       DEST_STATE_ABR
     )
   )
-
-#receiving_airports |>
-#	write_csv(
-#		file = "./dest_airports.csv",
-#		append = FALSE,
-#		col_names = TRUE,
-#		quote = "needed",
-#		escape = "backslash"
-#	)
-#zip(
-#  zipfile = "./dest_airports.zip",
-#  files = "./dest_airports.csv"
-#)
-#file.remove("./dest_airports.csv")
