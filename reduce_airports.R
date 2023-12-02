@@ -85,6 +85,7 @@ airports = airports |>
       prop_dep_del20,
       prop_dep_del30,
       prop_dep_early10,
+      prop_dep_early20,
       median_arrival_delay_mins,
       mean_arrival_delay_mins,
       mean_net_delay_as_dest,
@@ -92,6 +93,7 @@ airports = airports |>
       prop_dest_del20,
       prop_dest_early10,
       prop_dest_early20,
+      prop_dest_early30,
       flights_departed_per_day_reporting,
       flights_received_per_day_reporting,
       mean_arr_on_busiest_dow
