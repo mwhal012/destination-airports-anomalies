@@ -76,6 +76,22 @@ airports = "airports.csv" |>
   )
 
 airports = airports |>
+  mutate(
+    across(
+      .cols = where(is.numeric),
+      .fns = \(x) scale(x)[, 1]
+    )
+  )
+
+airports |>
+  write_csv(
+    "full_airports.csv",
+    na = "NA",
+    append = FALSE,
+    quote = "needed"
+  )
+
+airports = airports |>
   select(
     !c(
       n_flights_departed,
@@ -97,14 +113,6 @@ airports = airports |>
       flights_departed_per_day_reporting,
       flights_received_per_day_reporting,
       mean_arr_on_busiest_dow
-    )
-  )
-
-airports = airports |>
-  mutate(
-    across(
-      .cols = where(is.numeric),
-      .fns = \(x) scale(x)[, 1]
     )
   )
 
