@@ -1,0 +1,35 @@
+data <- receiving_airports_pc
+
+# Determine the number of observations and features
+n <- nrow(data)
+m <- ncol(data)
+
+# Number of anomalies we want to detect
+k <- 10
+
+# Initialize the AVF scores vector
+AVF_scores <- rep(0, n)
+
+# Calculate the frequency of each feature value across the dataset
+frequency_list <- lapply(data, function(x) table(factor(x, levels = unique(unlist(data)))))
+
+# Calculate the AVF scores
+for (i in 1:n) {
+  for (j in 1:m) {
+    feature_value <- data[i, j]
+    # Increment the score by the inverse of frequency of the feature value
+    AVF_scores[i] <- AVF_scores[i] + 1 / frequency_list[[j]][as.character(feature_value)]
+  }
+  # Normalize by the number of features to get the mean
+  AVF_scores[i] <- AVF_scores[i] / m
+}
+
+plot(AVF_scores)
+
+# Identify the k observations with the smallest AVF scores
+anomalies <- order(AVF_scores)[1:k]
+
+# Extract the anomalous observations
+anomalous_data <- data[anomalies, ]
+
+anomalous_data
