@@ -1,91 +1,185 @@
+library(conflicted)
 library(tidyverse)
 library(isotree)
-library(conflicted)
-"dplyr" |>
-  conflict_prefer_all(quiet = TRUE)
+conflicts_prefer(
+  dplyr::filter,
+  dplyr::lag
+)
 
-pc = "receiving_airports_pc.csv" |>
+US_states = c(
+  "AL", # Alabama
+  "AK", # Alaska
+  "AZ", # Arizona
+  "AR", # Arkansas
+  "CA", # California
+  "CO", # Colorado
+  "CT", # Connecticut
+  "DE", # Delaware
+  "FL", # Florida
+  "GA", # Georgia
+  "HI", # Hawaii
+  "ID", # Idaho
+  "IL", # Illinois
+  "IN", # Indiana
+  "IA", # Iowa
+  "KS", # Kansas
+  "KY", # Kentucky
+  "LA", # Louisiana
+  "ME", # Maine
+  "MD", # Maryland
+  "MA", # Massachusetts
+  "MI", # Michigan
+  "MN", # Minnesota
+  "MS", # Mississippi
+  "MO", # Missouri
+  "MT", # Montana
+  "NE", # Nebraska
+  "NV", # Nevada
+  "NH", # New Hampshire
+  "NJ", # New Jersey
+  "NM", # New Mexico
+  "NY", # New York
+  "NC", # North Carolina
+  "ND", # North Dakota
+  "OH", # Ohio
+  "OK", # Oklahoma
+  "OR", # Oregon
+  "PA", # Pennsylvania
+  "RI", # Rhode Island
+  "SC", # South Carolina
+  "SD", # South Dakota
+  "TN", # Tennessee
+  "TX", # Texas
+  "UT", # Utah
+  "VT", # Vermont
+  "VA", # Virginia
+  "WA", # Washington
+  "WV", # West Virginia
+  "WI", # Wisconsin
+  "WY" # Wyoming
+)
+
+sevendays = c("1", "2", "3", "4", "5", "6", "7")
+
+scaled_airports = "scaled_airports.csv" |>
   read_csv(
     col_types = cols(
-      dest_airport_seq_ID = col_factor(),
-      dest_city_name = col_factor(),
+      seq_ID = col_factor(),
+      city_name = col_character(),
+      origin_state = col_factor(levels = US_states),
+      DEST_STATE_ABR = col_factor(levels = US_states),
+      busiest_day_of_week_dep = col_factor(levels = sevendays),
+      busiest_day_of_week_arr = col_factor(levels = sevendays),
+      most_common_dest_apt = col_factor(),
+      most_common_dest_city = col_character(),
       most_common_origin_apt = col_factor(),
-      most_common_origin_city = col_factor(),
-      most_common_origin_state = col_factor(),
+      most_common_origin_city = col_character(),
+      most_common_dest_state = col_factor(levels = US_states),
+      most_common_origin_state = col_factor(levels = US_states),
       .default = col_double()
+    )
+  ) |>
+  select(!DEST_STATE_ABR) |>
+  mutate(
+    state = origin_state,
+    .keep = "unused",
+    .after = city_name
+  )
+
+airports = "airports.csv" |>
+  read_csv(
+    col_types = cols(
+      seq_ID = col_factor(),
+      origin_state = col_factor(levels = US_states),
+      DEST_STATE_ABR = col_factor(levels = US_states),
+      busiest_day_of_week_dep = col_factor(levels = sevendays),
+      busiest_day_of_week_arr = col_factor(levels = sevendays),
+      most_common_dest_apt = col_factor(),
+      most_common_origin_apt = col_factor(),
+      most_common_dest_state = col_factor(levels = US_states),
+      most_common_origin_state = col_factor(levels = US_states)
     )
   )
 
-forest = pc |>
-  select(PC1:PC5) |>
+forest = scaled_airports |>
   isolation.forest(
-    ntrees = 1000,
-    #scoring_metric = "adj_depth",
+    ntrees = 10000,
     penalize_range = TRUE,
     output_score = TRUE,
     output_dist = TRUE
   )
 
-pred = forest$model |>
-  predict(newdata = pc) |>
-  as_tibble_col()
-pred = pred |>
+scaled_airports = scaled_airports |>
   mutate(
-    index = c(1:nrow(pc)),
-    dest_airport_seq_ID = pc$dest_airport_seq_ID,
-    dest_city_name = pc$dest_city_name,
-    most_common_origin_apt = pc$most_common_origin_apt,
-    most_common_origin_city = pc$most_common_origin_city,
-    most_common_origin_state = pc$most_common_origin_state,
-    .before = value
+    index = c(1:nrow(scaled_airports)),
+    score = forest$scores
   )
 
 ggplot(
-  data = pred,
+  data = scaled_airports,
   mapping = aes(
       x = index,
-      y = value,
+      y = score,
       label = if_else(
-        value > 0.6,
-        true = dest_city_name,
+        score > 0.475,
+        true = city_name,
         false = ""
       )
     )
 ) +
-  geom_point() +
-  geom_text(vjust = -0.5)
+  geom_point(
+    mapping = aes(
+      x = index,
+      y = score,
+      size = log(airports$n_flights_received)
+    ),
+    alpha = 0.9
+  ) +
+  geom_text(vjust = -0.6)
 
-forest = pc |>
-  select(PC1:PC5) |>
+full_airports = "full_airports.csv" |>
+  read_csv(
+    col_types = cols(
+      seq_ID = col_factor(),
+      origin_state = col_factor(levels = US_states),
+      DEST_STATE_ABR = col_factor(levels = US_states),
+      busiest_day_of_week_dep = col_factor(levels = sevendays),
+      busiest_day_of_week_arr = col_factor(levels = sevendays),
+      most_common_dest_apt = col_factor(),
+      most_common_origin_apt = col_factor(),
+      most_common_dest_state = col_factor(levels = US_states),
+      most_common_origin_state = col_factor(levels = US_states)
+    )
+  ) |>
+  select(!DEST_STATE_ABR) |>
+  mutate(
+    state = origin_state,
+    .keep = "unused",
+    .after = city_name
+  )
+
+forest = full_airports |>
   isolation.forest(
     ntrees = 1000,
-    scoring_metric = "adj_depth",
+    penalize_range = TRUE,
     output_score = TRUE,
     output_dist = TRUE
   )
 
-pred = forest$model |>
-  predict(newdata = pc) |>
-  as_tibble_col()
-pred = pred |>
+full_airports = full_airports |>
   mutate(
-    index = c(1:nrow(pc)),
-    dest_airport_seq_ID = pc$dest_airport_seq_ID,
-    dest_city_name = pc$dest_city_name,
-    most_common_origin_apt = pc$most_common_origin_apt,
-    most_common_origin_city = pc$most_common_origin_city,
-    most_common_origin_state = pc$most_common_origin_state,
-    .before = value
+    index = c(1:nrow(full_airports)),
+    score = forest$scores
   )
 
 ggplot(
-  data = pred,
+  data = full_airports,
   mapping = aes(
       x = index,
-      y = value,
+      y = score,
       label = if_else(
-        value > 0.6,
-        true = dest_city_name,
+        score > 0.525,
+        true = city_name,
         false = ""
       )
     )
