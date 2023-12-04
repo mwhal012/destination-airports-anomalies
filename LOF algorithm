@@ -1,0 +1,36 @@
+library(dbscan)
+
+num_columns <- ncol(scaled_airports)
+
+# Create a new dataset with only the number variables
+data <- scaled_airports[, c(5:11, 13, 15, 17)]
+
+# Calculate the LOF scores using the dbscan package
+lof_scores <- lof(data, minPts = 11)
+
+# The lof() function automatically performs the steps mentioned in the algorithm:
+# 1. It computes the k-distance for each point.
+# 2. It finds the k-nearest neighbors.
+# 3. It calculates the reachability distance, average reachability distance,
+#    local reachability density, and finally the LOF score.
+
+# The output is a vector of LOF scores for each point in the dataset
+print(lof_scores)
+
+# Setting a threshold, for example, points with an LOF > 5000 could be considered outliers
+threshold <- 5000
+outliers <- which(lof_scores > threshold)
+
+# Print outlier points
+if(length(outliers) > 0) {
+  print(data[outliers, ])
+} else {
+  print("No outliers found with the chosen threshold.")
+}
+
+
+point_colors <- rep("black", length(lof_scores))
+
+point_colors[outliers] <- "red"
+
+plot(lof_scores, col=point_colors, pch=19)  # pch=19 makes the points solid circles
