@@ -5,17 +5,8 @@ library(ggplot2)
 "dplyr" |>
   conflict_prefer_all(quiet = TRUE)
 
-dataPCs = "receiving_airports_pc.csv" |>
-  read_csv(
-    col_types = cols(
-      dest_airport_seq_ID = col_factor(),
-      dest_city_name = col_factor(),
-      most_common_origin_apt = col_factor(),
-      most_common_origin_city = col_factor(),
-      most_common_origin_state = col_factor(),
-      .default = col_double()
-    )
-  )
+dataPCs = "scaled_airports.csv" |>
+  read_csv()
 
 euclidean_distance = function(a, b){
   #  We check that they have the same number of observation
@@ -25,9 +16,10 @@ euclidean_distance = function(a, b){
     stop()
   }
 }
+
 manhattan_distance = function(a,b){
   if(length(a) == length(b)){
-    abs(sum(a-b))  
+    abs(sum(a-b))  d
   } else{
     stop()
   }
@@ -68,7 +60,7 @@ obs = dataPCs
 eucledian_KNN <- vector("list", length = 346)
 
 for(i in 1:346){
-eucledian_KNN[[i]] = nearest_neighbors(x[-i,6:10],obs[i,6:10],10,euclidean_distance)
+eucledian_KNN[[i]] = nearest_neighbors(x[-i,5:14],obs[i,5:14],10,euclidean_distance)
 }
 
 distanceMeanEuc <- vector("list", length = 346)
@@ -81,7 +73,7 @@ for (j in 1:346) {
 manhattan_KNN <- vector("list", length = 346)
 
 for(i in 1:346){
-  manhattan_KNN[[i]] = nearest_neighbors(x[-i,6:10],obs[i,6:10],10, manhattan_distance)
+  manhattan_KNN[[i]] = nearest_neighbors(x[-i,5:14],obs[i,5:14],10, manhattan_distance)
 }
 
 distanceMeanMan <- vector("list", length = 346)
@@ -103,3 +95,6 @@ plotManData <- data.frame(Index = 1:length(distanceMeanMan),
 ggplot(plotManData, aes(x=Index,y=Value))+
   geom_point()+
   geom_text(aes(label = Index), vjust = -0.5, hjust = 0.5, size = 3)
+
+resultsEuc <- cbind(plotEucData, dataPCs)
+resultsMan <- cbind(plotManData, dataPCs)
