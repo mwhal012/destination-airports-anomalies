@@ -175,7 +175,12 @@ ggplot(data = outliers) +
       vjust = case_when(
         score > 0.5 & !str_starts(city_name, pattern = "Hagerstown") ~ -1,
         score <= 0.5 & !str_starts(city_name, pattern = "Hagerstown") ~ -2,
-        .default = 1.5
+        .default = 0.8
+      ),
+      hjust = if_else(
+        str_starts(city_name, pattern = "Hagerstown"),
+        true = -0.125,
+        false = 0.5
       )
     ),
     position = pos,
@@ -205,5 +210,5 @@ ggplot(data = outliers) +
   ) +
   labs(
     title = "Isolated Forest Scores",
-    subtitle = "for airports in January, 2019"
+    subtitle = "Airports in January 2019"
   )
