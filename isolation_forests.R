@@ -90,6 +90,7 @@ airports = "airports.csv" |>
   read_csv(
     col_types = cols(
       seq_ID = col_factor(),
+      city_name = col_character(),
       origin_state = col_factor(levels = US_states),
       DEST_STATE_ABR = col_factor(levels = US_states),
       busiest_day_of_week_dep = col_factor(levels = sevendays),
@@ -121,7 +122,7 @@ ggplot(
       x = index,
       y = score,
       label = if_else(
-        score > 0.475,
+        score > 0.485,
         true = city_name,
         false = ""
       )
@@ -137,52 +138,72 @@ ggplot(
   ) +
   geom_text(vjust = -0.6)
 
-full_airports = "full_airports.csv" |>
-  read_csv(
-    col_types = cols(
-      seq_ID = col_factor(),
-      origin_state = col_factor(levels = US_states),
-      DEST_STATE_ABR = col_factor(levels = US_states),
-      busiest_day_of_week_dep = col_factor(levels = sevendays),
-      busiest_day_of_week_arr = col_factor(levels = sevendays),
-      most_common_dest_apt = col_factor(),
-      most_common_origin_apt = col_factor(),
-      most_common_dest_state = col_factor(levels = US_states),
-      most_common_origin_state = col_factor(levels = US_states)
-    )
-  ) |>
-  select(!DEST_STATE_ABR) |>
-  mutate(
-    state = origin_state,
-    .keep = "unused",
-    .after = city_name
-  )
+outliers = scaled_airports |>
+  mutate(n_flights = airports$n_flights_departed + airports$n_flights_received) |>
+  filter(score > 0.485)
+outliers = outliers |>
+  mutate(index = c(1:nrow(outliers)))
 
-forest = full_airports |>
-  isolation.forest(
-    ntrees = 1000,
-    penalize_range = TRUE,
-    output_score = TRUE,
-    output_dist = TRUE
-  )
-
-full_airports = full_airports |>
-  mutate(
-    index = c(1:nrow(full_airports)),
-    score = forest$scores
-  )
-
-ggplot(
-  data = full_airports,
-  mapping = aes(
-      x = index,
+seed = 25100
+pos = position_jitter(
+  width = 0.3,
+  height = 0,
+  seed = seed
+)
+ggplot(data = outliers) +
+  geom_point(
+    mapping = aes(
+      x = "",
       y = score,
-      label = if_else(
-        score > 0.525,
-        true = city_name,
-        false = ""
+      size = n_flights,
+      fill = score
+    ),
+    position = pos,
+    shape = 22,
+    stroke = 1,
+    show.legend = c(size = TRUE, fill = FALSE)
+  ) +
+  scale_size(
+    name = "Flights"
+  ) +
+  scale_fill_viridis_c(direction = -1) +
+  geom_text(
+    mapping = aes(
+      x = "",
+      y = score,
+      label = city_name,
+      vjust = case_when(
+        score > 0.5 & !str_starts(city_name, pattern = "Hagerstown") ~ -1,
+        score <= 0.5 & !str_starts(city_name, pattern = "Hagerstown") ~ -2,
+        .default = 1.5
       )
-    )
-) +
-  geom_point() +
-  geom_text(vjust = -0.5)
+    ),
+    position = pos,
+    check_overlap = FALSE,
+    size = 3
+  ) +
+  geom_hline(
+    yintercept = 0.50,
+    colour = "red",
+    linetype = 3
+  ) +
+  scale_y_continuous(
+    name = NULL,
+    limits = c(0.4825, 0.56),
+    expand = expansion(mult = 0, add = 0)
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.background = element_blank(),
+    legend.key = element_blank(),
+    legend.direction = "horizontal",
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Isolated Forest Scores",
+    subtitle = "for airports in January, 2019"
+  )
