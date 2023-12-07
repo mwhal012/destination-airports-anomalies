@@ -20,7 +20,7 @@ euclidean_distance = function(a, b){
 #Man Dist Formula
 manhattan_distance = function(a,b){
   if(length(a) == length(b)){
-    abs(sum(a-b))  d
+    abs(sum(a-b))  
   } else{
     stop()
   }
@@ -98,16 +98,21 @@ resultsMan <- resultsMan%>%
   mutate(Outlier = ifelse(rank(-Value) <= 10, "Outlier", "Non-Outlier"))
 
 #Plot Distances
-ggplot(plotManData, aes(x=Index,y=Value))geom_point(aes(color= Outlier)) +
+ggplot(resultsMan, aes(x=Index,y=Value))+
+  geom_point(aes(color= Outlier)) +
   scale_color_manual(values = c("Outlier" = "red", "Non-Outlier" = "black"))+
-  geom_text(data = subset(resultsEuc, Outlier == "Outlier"), aes(label = city_name),
+  geom_text(data = subset(resultsMan, Outlier == "Outlier"), aes(label = city_name),
             vjust = -0.5, hjust = 0.5, size = 3)
 
 ggplot(resultsEuc, aes(x=Index,y=Value))+
   geom_point(aes(color= Outlier)) +
   scale_color_manual(values = c("Outlier" = "red", "Non-Outlier" = "black"))+
   geom_text(data = subset(resultsEuc, Outlier == "Outlier"), aes(label = city_name),
-            vjust = -0.5, hjust = 0.5, size = 3)
+            vjust = -0.5, hjust = 0.5, size = 3)+
+  ggtitle("Mean Eucldeian Distance to 10 Nearest Neighbours")+
+  ylab("Mean Distance")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 #ggpairs on data set(I used the KNN_outliers for the sake of coloring)
 ggpairs(resultsEuc, columns = c(7,8,10,11,12),
@@ -116,6 +121,7 @@ ggpairs(resultsEuc, columns = c(7,8,10,11,12),
         diag = list(continuous = "blankDiag"),
         aes(color = Outlier)
         ) + 
-  scale_color_manual(values = c("Outlier" = "red", "Non-Outlier" = "black"))
+  scale_color_manual(values = c("Outlier" = "red", "Non-Outlier" = "black"))+
+  theme_bw()
 
 
