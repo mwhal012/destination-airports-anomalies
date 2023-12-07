@@ -1,6 +1,5 @@
 library(tidyverse)
 library(dbscan)
-library(tidyverse)
 
 Scaled_Airports <- read.csv("scaled_airports.csv")
 Scaled_Airports <- as.matrix(Scaled_Airports[, c(5,6,7,8,9,10,11,13)])
