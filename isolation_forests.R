@@ -139,11 +139,12 @@ ggplot(
   geom_text(vjust = -0.6)
 
 outliers = scaled_airports |>
-  mutate(n_flights = airports$n_flights_departed + airports$n_flights_received) |>
+  mutate(n_flights_departed = airports$n_flights_departed) |>
   filter(score > 0.485)
 outliers = outliers |>
   mutate(index = c(1:nrow(outliers)))
 
+problem_cities = c("Chicago, IL", "Atlanta, GA", "Hagerstown, MD")
 seed = 25100
 pos = position_jitter(
   width = 0.3,
@@ -155,7 +156,7 @@ ggplot(data = outliers) +
     mapping = aes(
       x = "",
       y = score,
-      size = n_flights,
+      size = n_flights_departed,
       fill = score
     ),
     position = pos,
@@ -163,23 +164,27 @@ ggplot(data = outliers) +
     stroke = 1,
     show.legend = c(size = TRUE, fill = FALSE)
   ) +
-  scale_size(
-    name = "Flights"
+  scale_size_area(
+    name = "Flights\nDeparted",
+    max_size = 15
   ) +
-  scale_fill_viridis_c(direction = -1) +
+  scale_fill_viridis_c(direction = -1, begin = 0.2) +
   geom_text(
     mapping = aes(
       x = "",
       y = score,
       label = city_name,
       vjust = case_when(
-        score > 0.5 & !str_starts(city_name, pattern = "Hagerstown") ~ -1,
-        score <= 0.5 & !str_starts(city_name, pattern = "Hagerstown") ~ -2,
-        .default = 0.8
+        !str_starts(city_name, pattern = "Hagerstown") &
+          !str_starts(city_name, pattern = "Chicago") &
+          !str_starts(city_name, pattern = "Atlanta") ~ -1,
+        str_starts(city_name, pattern = "Chicago") ~ -2.65,
+        str_starts(city_name, pattern = "Atlanta") ~ -3,
+        str_starts(city_name, pattern = "Hagerstown") ~ 2
       ),
       hjust = if_else(
         str_starts(city_name, pattern = "Hagerstown"),
-        true = -0.125,
+        true = 0.35,
         false = 0.5
       )
     ),
@@ -194,8 +199,8 @@ ggplot(data = outliers) +
   ) +
   scale_y_continuous(
     name = NULL,
-    limits = c(0.4825, 0.56),
-    expand = expansion(mult = 0, add = 0)
+    limits = c(0.48, 0.5575),
+    expand = expansion(mult = c(0.025, 0), add = 0)
   ) +
   theme(
     axis.title.x = element_blank(),
@@ -203,12 +208,14 @@ ggplot(data = outliers) +
     axis.ticks.x = element_blank(),
     panel.background = element_blank(),
     legend.key = element_blank(),
-    legend.direction = "horizontal",
-    legend.position = "bottom",
+    legend.direction = "vertical",
+    legend.position = "right",
+    legend.title.align = 1,
+    legend.box.spacing = unit(x = -10, units = "mm"),
     plot.title = element_text(hjust = 0.5),
     plot.subtitle = element_text(hjust = 0.5)
   ) +
   labs(
-    title = "Isolated Forest Scores",
+    title = "Isolation Forest Scores",
     subtitle = "Airports in January 2019"
   )
