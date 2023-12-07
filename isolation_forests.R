@@ -164,9 +164,9 @@ ggplot(data = outliers) +
     stroke = 1,
     show.legend = c(size = TRUE, fill = FALSE)
   ) +
-  scale_size_area(
+  scale_size(
     name = "Flights\nDeparted",
-    max_size = 15
+    range = c(1, 15)
   ) +
   scale_fill_viridis_c(direction = -1, begin = 0.2) +
   geom_text(
