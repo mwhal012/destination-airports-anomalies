@@ -1,6 +1,9 @@
 library(tidyverse)
 library(dbscan)
 
+airports = read_csv("airports.csv") # just for reference to e.g. index
+airports = airports |>
+  mutate(index = c(1:nrow(airports)), .before = seq_ID)
 Scaled_Airports <- read.csv("scaled_airports.csv")
 Scaled_Airports <- as.matrix(Scaled_Airports[, c(5,6,7,8,9,10,11,13)])
 kNNdistplot(Scaled_Airports, minPts = 3)
@@ -22,27 +25,33 @@ combs = map(
     as_tibble() # list-like structure for input into purrr::map()
 )
 
-hdb = map(
-  .x = combs,
-  .f = \(frame) map(
-    .x = frame,
-    .f = \(col) hdbscan(x = as.matrix(Scaled_Airports[, col]), minPts = 3)
-  )
-)
+alone = \(x) if_else(x == 0, true = 1, false = 0)
 
 db = map(
   .x = combs,
-  .f = \(frame) map(
-    .x = frame,
-    .f = function(col) {
-      airports = Scaled_Airports[, col] |>
-        as.matrix()
-      m = length(col) # number of variables
-      dbscan(
-        x = as.matrix(Scaled_Airports[, col]),
-        eps = 1.5,
-        minPts = floor(m / 2) + 10
-      )
-    }
-  )
+  .f = function(frame) {
+    y = map(
+      .x = frame,
+      .f = function(col) {
+        airports = Scaled_Airports[, col] |>
+          as.matrix()
+        m = length(col) # number of variables
+        dbscan(
+          x = as.matrix(Scaled_Airports[, col]),
+          eps = m / 2,
+          minPts = floor(m / 2) + 10
+        )$cluster |>
+          alone()
+      }
+    )
+    s = rep_len(0, length.out = nrow(Scaled_Airports))
+    for(n in names(y)) s = s + y[[n]]
+    return(list(y, s))
+  }
 )
+
+total = rep_len(0, length.out = nrow(Scaled_Airports))
+for(ind in 1:ncol(Scaled_Airports)) total = total + db[[ind]][[2]]
+indices = which(total > 70)
+airports |>
+  slice(indices)
