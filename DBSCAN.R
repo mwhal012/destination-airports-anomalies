@@ -55,3 +55,5 @@ for(ind in 1:ncol(Scaled_Airports)) total = total + db[[ind]][[2]]
 indices = which(total > 70)
 airports |>
   slice(indices)
+
+airports <- cbind(airports, total)
